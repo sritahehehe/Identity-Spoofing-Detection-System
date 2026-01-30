@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+*.db
+*.sqlite
+.DS_Store
+sms_error.log
+static/qrcodes/*
+!static/qrcodes/.gitkeep

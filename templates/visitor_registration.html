@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Visitor Registration Form</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark min-h-screen font-display">
+    <div
+        class="relative flex h-full min-h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-x-hidden">
+        <!-- TopAppBar -->
+        <div
+            class="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10 border-b border-gray-200 dark:border-gray-800">
+            <div class="text-[#0d141b] dark:text-white flex size-12 shrink-0 items-center justify-start cursor-pointer"
+                data-icon="ArrowBack">
+                <span class="material-symbols-outlined">arrow_back_ios</span>
+            </div>
+            <h2
+                class="text-[#0d141b] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center mr-12">
+                Visitor Registration</h2>
+        </div>
+        <div class="flex flex-col px-4 py-6 gap-6 max-w-[480px] mx-auto w-full">
+            <!-- Section: Visitor Contact -->
+            <div class="flex flex-col gap-4">
+                <h3 class="text-[#0d141b] dark:text-white text-base font-bold leading-tight tracking-[-0.015em]">Visitor
+                    Details</h3>
+                <div class="flex flex-col gap-2">
+                    <p class="text-[#0d141b] dark:text-white text-sm font-medium leading-normal">Visitor Phone Number
+                    </p>
+                    <div class="flex gap-2">
+                        <!-- Country Code Selector (Simulated) -->
+                        <div
+                            class="flex items-center gap-2 px-3 py-3 border border-[#cfdbe7] dark:border-gray-700 bg-white dark:bg-background-dark rounded-lg cursor-pointer">
+                            <span class="text-lg">🇮🇳</span>
+                            <span class="text-[#0d141b] dark:text-white text-base font-normal">+91</span>
+                            <span class="material-symbols-outlined text-sm">expand_more</span>
+                        </div>
+                        <!-- Phone Input -->
+                        <div class="flex-1">
+                            <input id="visitor_phone"
+                                class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#0d141b] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary border border-[#cfdbe7] dark:border-gray-700 bg-white dark:bg-background-dark focus:border-primary h-14 placeholder:text-[#4c739a] p-[15px] text-base font-normal leading-normal"
+                                placeholder="000-000-0000" type="tel" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Section: Purpose -->
+            <div class="flex flex-col gap-4">
+                <h3 class="text-[#0d141b] dark:text-white text-base font-bold leading-tight tracking-[-0.015em]">Purpose
+                    of Visit</h3>
+                <div class="flex gap-3 flex-wrap" id="purpose-container">
+                    <!-- Added data-value attributes and IDs for easier JS selection -->
+                    <div class="purpose-option flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-primary text-white px-5 cursor-pointer"
+                        data-value="Delivery">
+                        <span class="material-symbols-outlined text-sm">local_shipping</span>
+                        <p class="text-sm font-medium leading-normal">Delivery</p>
+                    </div>
+                    <div class="purpose-option flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-gray-800 border border-[#cfdbe7] dark:border-gray-700 px-5 text-[#0d141b] dark:text-white cursor-pointer hover:bg-gray-50"
+                        data-value="Guest">
+                        <span class="material-symbols-outlined text-sm">person</span>
+                        <p class="text-sm font-medium leading-normal">Guest</p>
+                    </div>
+                    <div class="purpose-option flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-gray-800 border border-[#cfdbe7] dark:border-gray-700 px-5 text-[#0d141b] dark:text-white cursor-pointer hover:bg-gray-50"
+                        data-value="Service">
+                        <span class="material-symbols-outlined text-sm">build</span>
+                        <p class="text-sm font-medium leading-normal">Service</p>
+                    </div>
+                    <div class="purpose-option flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-white dark:bg-gray-800 border border-[#cfdbe7] dark:border-gray-700 px-5 text-[#0d141b] dark:text-white cursor-pointer hover:bg-gray-50"
+                        data-value="Other">
+                        <span class="material-symbols-outlined text-sm">more_horiz</span>
+                        <p class="text-sm font-medium leading-normal">Other</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Section: Optional Notes -->
+            <div class="flex flex-col gap-2">
+                <p class="text-[#0d141b] dark:text-white text-sm font-medium leading-normal">Optional Notes</p>
+                <textarea id="notes"
+                    class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#0d141b] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary border border-[#cfdbe7] dark:border-gray-700 bg-white dark:bg-background-dark focus:border-primary min-h-32 placeholder:text-[#4c739a] p-[15px] text-base font-normal leading-normal"
+                    placeholder="Add any instructions for security..."></textarea>
+            </div>
+            <!-- Information Label -->
+            <div
+                class="mt-4 flex items-start gap-3 p-4 bg-primary/10 dark:bg-primary/20 rounded-xl border border-primary/20">
+                <span class="material-symbols-outlined text-primary text-xl">info</span>
+                <p class="text-primary dark:text-blue-400 text-sm font-medium leading-snug">
+                    No pass will be generated until visitor arrives at the gate. You will be notified for final approval
+                    upon arrival.
+                </p>
+            </div>
+        </div>
+        <!-- Sticky Bottom Button -->
+        <div
+            class="mt-auto p-4 bg-background-light dark:bg-background-dark border-t border-gray-200 dark:border-gray-800">
+            <button id="submit-btn"
+                class="w-full flex h-14 items-center justify-center rounded-xl bg-primary text-white text-base font-bold tracking-tight shadow-lg active:scale-[0.98] transition-transform">
+                Submit Visitor Request
+            </button>
+            <div class="h-4"></div> <!-- iOS Home Indicator Padding -->
+        </div>
+    </div>
+
+    <script>
+        let selectedPurpose = "Delivery"; // Default
+
+        const purposeOptions = document.querySelectorAll('.purpose-option');
+        const submitBtn = document.getElementById('submit-btn');
+
+        // Handle Purpose Selection
+        purposeOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                // Remove active classes from all
+                purposeOptions.forEach(opt => {
+                    opt.classList.remove('bg-primary', 'text-white');
+                    opt.classList.add('bg-white', 'dark:bg-gray-800', 'text-[#0d141b]', 'dark:text-white', 'border', 'border-[#cfdbe7]', 'dark:border-gray-700');
+                });
+
+                // Add active classes to selected
+                option.classList.remove('bg-white', 'dark:bg-gray-800', 'text-[#0d141b]', 'dark:text-white', 'border', 'border-[#cfdbe7]', 'dark:border-gray-700');
+                option.classList.add('bg-primary', 'text-white');
+
+                selectedPurpose = option.getAttribute('data-value');
+            });
+        });
+
+        // Handle Submit
+        submitBtn.addEventListener('click', async () => {
+            let phone = document.getElementById('visitor_phone').value.trim();
+            const notes = document.getElementById('notes').value;
+
+            // Ensure +91 prefix if not present
+            if (phone && !phone.startsWith('+')) {
+                phone = '+91' + phone;
+            }
+
+            if (!phone) {
+                alert("Please enter a visitor phone number.");
+                return;
+            }
+
+            const payload = {
+                visitor_phone: phone,
+                purpose: selectedPurpose,
+                notes: notes
+            };
+
+            try {
+                const response = await fetch('/register-visitor', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    alert(`Success! Visitor registered. Valid until: ${new Date(data.valid_until).toLocaleString()}`);
+                    // Optional: Clear form or redirect
+                } else {
+                    const err = await response.text();
+                    alert("Error: " + err);
+                }
+            } catch (error) {
+                alert("Network error occurred.");
+                console.error(error);
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SocietyGuard Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">SocietyGuard Dashboard</h1>
+            <div class="bg-green-100 text-green-800 px-4 py-2 rounded-lg font-medium">
+                System Status: Online 🟢
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h3 class="text-gray-500 text-sm font-medium">Total Visits</h3>
+                <p class="text-3xl font-bold text-gray-800 mt-2">{{ visits|length }}</p>
+            </div>
+            <!-- Placeholders for more stats in future -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h3 class="text-gray-500 text-sm font-medium">Active Passes</h3>
+                <p class="text-3xl font-bold text-gray-800 mt-2">-</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h3 class="text-gray-500 text-sm font-medium">Latest Entry</h3>
+                <p class="text-lg font-semibold text-gray-800 mt-2">
+                    {% if visits %}
+                    {{ visits[0].created_at }}
+                    {% else %}
+                    N/A
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- Visits Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-800">Visitor Logs</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 text-gray-600 font-medium text-sm">
+                        <tr>
+                            <th class="px-6 py-3">ID</th>
+                            <th class="px-6 py-3">Flat ID</th>
+                            <th class="px-6 py-3">Visitor Phone</th>
+                            <th class="px-6 py-3">Purpose</th>
+                            <th class="px-6 py-3">Valid From</th>
+                            <th class="px-6 py-3">Valid Until</th>
+                            <th class="px-6 py-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 text-sm text-gray-700">
+                        {% for visit in visits %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 font-medium text-gray-900">#{{ visit.id }}</td>
+                            <td class="px-6 py-4">
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-xs font-semibold">Flat
+                                    {{ visit.flat_id }}</span>
+                            </td>
+                            <td class="px-6 py-4">{{ visit.visitor_phone }}</td>
+                            <td class="px-6 py-4">{{ visit.purpose }}</td>
+                            <td class="px-6 py-4 text-gray-500">{{ visit.valid_from }}</td>
+                            <td class="px-6 py-4 text-gray-500">{{ visit.valid_to }}</td>
+                            <td class="px-6 py-4">
+                                <span
+                                    class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-semibold">{{
+                                    visit.status }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not visits %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                                No visitor records found.
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
