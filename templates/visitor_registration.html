@@ -71,6 +71,13 @@
                 <h3 class="text-[#0d141b] dark:text-white text-base font-bold leading-tight tracking-[-0.015em]">Visitor
                     Details</h3>
                 <div class="flex flex-col gap-2">
+                    <label class="text-[#0d141b] dark:text-white text-sm font-medium leading-normal">Visitor Email (For
+                        Gate Pass)</label>
+                    <input id="visitor_email"
+                        class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#0d141b] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary border border-[#cfdbe7] dark:border-gray-700 bg-white dark:bg-background-dark focus:border-primary h-14 placeholder:text-[#4c739a] p-[15px] text-base font-normal leading-normal"
+                        placeholder="visitor@example.com" type="email" />
+                </div>
+                <div class="flex flex-col gap-2">
                     <p class="text-[#0d141b] dark:text-white text-sm font-medium leading-normal">Visitor Phone Number
                     </p>
                     <div class="flex gap-2">
@@ -172,6 +179,7 @@
         // Handle Submit
         submitBtn.addEventListener('click', async () => {
             let phone = document.getElementById('visitor_phone').value.trim();
+            const email = document.getElementById('visitor_email').value.trim();
             const notes = document.getElementById('notes').value;
 
             // Ensure +91 prefix if not present
@@ -183,9 +191,14 @@
                 alert("Please enter a visitor phone number.");
                 return;
             }
+            if (!email) {
+                alert("Please enter a visitor email.");
+                return;
+            }
 
             const payload = {
                 visitor_phone: phone,
+                visitor_email: email,
                 purpose: selectedPurpose,
                 notes: notes
             };

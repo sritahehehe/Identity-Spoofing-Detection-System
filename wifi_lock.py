@@ -9,6 +9,9 @@ app.add_middleware(SessionMiddleware, secret_key="supersecretkey")
 SECRET = b"supersecretkey"
 
 def is_society(ip):
+    # Allow localhost for testing + Society Subnet
+    if ip in ["127.0.0.1", "localhost", "::1"]:
+        return True
     return ip.startswith("172.20.10.")
 
 def verify(flat, nonce, sig):

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gate Digital Twin AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        canvas {
+            border: 2px solid #374151;
+            cursor: crosshair;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen p-8 font-sans">
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-blue-400">Gate Digital Twin AI 📹</h1>
+                <p class="text-gray-400">Zero-Trust Physical Verification</p>
+            </div>
+            <a href="/dashboard" class="text-gray-400 hover:text-white">← Back to Dashboard</a>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left: Controls & Video -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Token Simulation (New) -->
+                <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                    <h2 class="text-xl font-semibold mb-4">1. Hardware Simulation (Guard)</h2>
+                    <p class="text-sm text-gray-400 mb-2">Simulate a guard scanning a QR code just before this video.
+                    </p>
+                    <div class="flex gap-2">
+                        <input type="text" id="manualToken" placeholder="Paste Token Here..."
+                            class="flex-1 bg-gray-900 border border-gray-600 rounded px-4 py-2 text-white focus:outline-none focus:border-blue-500">
+                        <button onclick="simulateScan()"
+                            class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded">
+                            SCAN
+                        </button>
+                    </div>
+                    <div id="scanStatus" class="mt-2 text-sm"></div>
+                </div>
+
+                <!-- Video Upload -->
+                <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                    <h2 class="text-xl font-semibold mb-4">2. Camera Feed (Video Input)</h2>
+                    <input type="file" id="videoInput" accept="video/mp4,video/avi"
+                        class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700" />
+                </div>
+
+                <!-- Canvas / Preview -->
+                <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                    <h2 class="text-xl font-semibold mb-2">2. Define Zones</h2>
+                    <p class="text-sm text-gray-400 mb-4">Draw <b>Gate Line</b> (Blue) and <b>Inner Line</b> (Red).
+                        People crossing <b>Left &#8594; Right</b> (or vice-versa) across both lines are tracked.</p>
+
+                    <div class="relative bg-black rounded overflow-hidden" style="min-height: 400px;">
+                        <video id="videoPreview"
+                            class="hidden absolute top-0 left-0 w-full h-full object-contain"></video>
+                        <canvas id="zoneCanvas" width="800" height="450" class="w-full h-full block"></canvas>
+                    </div>
+
+                    <div class="mt-4 flex gap-4">
+                        <button onclick="setTool('gate')" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500">Draw
+                            Gate Line</button>
+                        <button onclick="setTool('inner')" class="px-4 py-2 bg-red-600 rounded hover:bg-red-500">Draw
+                            Inner Line</button>
+                        <button onclick="clearLines()"
+                            class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500">Clear</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Analysis Control & Results -->
+            <div class="space-y-6">
+                <!-- Action -->
+                <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                    <h2 class="text-xl font-semibold mb-4">3. Analysis</h2>
+                    <button id="verifyBtn" onclick="runAnalysis()"
+                        class="w-full py-4 bg-green-500 hover:bg-green-400 text-black font-bold text-lg rounded-xl shadow-lg transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                        VERIFY VIDEO
+                    </button>
+                    <div id="loading" class="hidden mt-4 text-center text-green-400 animate-pulse">
+                        Running YOLOv8 + SORT Pipeline...
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div id="resultsPanel" class="hidden bg-gray-800 p-6 rounded-xl border border-gray-700">
+                    <h2 class="text-xl font-semibold mb-4">Verdict Results</h2>
+                    <div id="resultsList" class="space-y-3">
+                        <!-- Dynamic Results -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const videoInput = document.getElementById('videoInput');
+        const canvas = document.getElementById('zoneCanvas');
+        const ctx = canvas.getContext('2d');
+        const verifyBtn = document.getElementById('verifyBtn');
+
+        let gateX = 100;
+        let innerX = 500;
+        let currentTool = null;
+
+        let videoEl = document.getElementById('videoPreview');
+
+        // Init
+        drawLines();
+
+        videoInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                videoEl.src = url;
+                videoEl.load();
+                // When video data loads, draw the first frame
+                videoEl.onloadeddata = function () {
+                    videoEl.currentTime = 0; // Seek start
+                };
+                videoEl.onseeked = function () {
+                    drawLines(); // Redraw with video background
+                };
+            }
+        });
+
+        async function simulateScan() {
+            const token = document.getElementById('manualToken').value.trim();
+            const statusDiv = document.getElementById('scanStatus');
+
+            if (!token) {
+                statusDiv.innerHTML = "<span class='text-red-400'>Please enter a token first.</span>";
+                return;
+            }
+
+            statusDiv.innerHTML = "Scanning...";
+
+            try {
+                // Call the existing verify-token endpoint for QR codes
+                const res = await fetch(`/verify-token?token=${token}`);
+                const data = await res.json();
+
+                if (data.status === 'valid') {
+                    statusDiv.innerHTML = `<span class='text-green-400'>✅ SCAN SUCCESS: ${data.detail}</span>`;
+                } else {
+                    statusDiv.innerHTML = `<span class='text-red-400'>❌ INVALID: ${data.detail}</span>`;
+                }
+            } catch (e) {
+                statusDiv.innerHTML = `<span class='text-red-400'>Error: ${e}</span>`;
+            }
+        }
+
+        function setTool(tool) { currentTool = tool; }
+
+        canvas.addEventListener('mousedown', function (e) {
+            if (!currentTool) return;
+            const rect = canvas.getBoundingClientRect();
+            // Map mouse X to canvas X
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+
+            if (currentTool === 'gate') gateX = x;
+            if (currentTool === 'inner') innerX = x;
+
+            drawLines();
+        });
+
+        function clearLines() {
+            gateX = 100; innerX = 500;
+            drawLines();
+        }
+
+        function drawLines() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Video Frame if available
+            if (videoEl.readyState >= 2) {
+                ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+            } else {
+                // Fallback black background
+                ctx.fillStyle = "black";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // Gate Line (Vertical)
+            ctx.strokeStyle = '#3b82f6'; // Blue
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(gateX, 0); ctx.lineTo(gateX, canvas.height);
+            ctx.stroke();
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillText("GATE LINE", gateX + 5, 20);
+
+            // Inner Line (Vertical)
+            ctx.strokeStyle = '#ef4444'; // Red
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(innerX, 0); ctx.lineTo(innerX, canvas.height);
+            ctx.stroke();
+            ctx.fillStyle = '#ef4444';
+            ctx.fillText("INNER BOUNDARY", innerX + 5, 20);
+        }
+
+        async function runAnalysis() {
+            const file = videoInput.files[0];
+            if (!file) { alert("Please upload a video first."); return; }
+
+            verifyBtn.disabled = true;
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('resultsPanel').classList.add('hidden');
+
+            const formData = new FormData();
+            formData.append('video', file);
+            formData.append('gate_x', Math.round(gateX));
+            formData.append('inner_x', Math.round(innerX));
+
+            try {
+                const res = await fetch('/verify-video', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (data.video_url) {
+                    const resDiv = document.getElementById('resultsPanel');
+
+                    // CLEANUP: Remove old video player if exists to prevent duplicates
+                    const oldVid = document.getElementById('ai-analysis-video');
+                    if (oldVid) oldVid.remove();
+
+                    // Add result video player
+                    const vPlayer = document.createElement('div');
+                    vPlayer.id = "ai-analysis-video"; // Assign ID for future cleanup
+                    vPlayer.className = "mt-4 p-4 bg-black rounded-lg border border-gray-600";
+                    vPlayer.innerHTML = `
+                        <h3 class="text-white font-bold mb-2">🔍 AI Processing Analysis:</h3>
+                        <video controls src="${data.video_url}" class="w-full rounded"></video>
+                        <p class="text-xs text-gray-400 mt-2">Check this video to see how lines were crossed.</p>
+                    `;
+                    resDiv.prepend(vPlayer);
+                }
+
+                displayResults(data.results);
+
+                // Draw tracks on canvas for visual feedback?
+                // Just verdicts for now.
+
+            } catch (e) {
+                alert("Error processing video: " + e);
+            } finally {
+                verifyBtn.disabled = false;
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+
+        function displayResults(results) {
+            const container = document.getElementById('resultsList');
+            container.innerHTML = "";
+            document.getElementById('resultsPanel').classList.remove('hidden');
+
+            if (!results || results.length === 0) {
+                container.innerHTML = "<p class='text-gray-400'>No entries detected properly (No full crossing).</p>";
+                return;
+            }
+
+            results.forEach(r => {
+                let color = "red";
+                let icon = "⚠️";
+
+                // Flexible matching for new verbose statuses
+                if (r.verdict.includes("VERIFIED")) { color = "green"; icon = "✅"; }
+                if (r.verdict.includes("TAILGATING")) { color = "orange"; icon = "🛑"; }
+
+                const el = document.createElement('div');
+                el.className = `p-4 rounded-lg bg-gray-900 border border-${color}-500/50 flex justify-between items-center`;
+                el.innerHTML = `
+                    <div>
+                        <div class="font-bold text-${color}-400 text-lg">${icon} ${r.verdict}</div>
+                        <div class="text-xs text-gray-500">Person #ID: ${r.person_id} | Time: ${r.time_gate ? r.time_gate.toFixed(1) : '?'}s</div>
+                    </div>
+                    <div class="text-right">
+                         <div class="text-xs text-gray-400">Payload</div>
+                         <div class="font-mono text-sm">${r.payload}</div>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guard Scanner - SocietyGuard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        #reader {
+            width: 100%;
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+
+        video {
+            border-radius: 0.75rem;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 min-h-screen p-4 flex flex-col items-center justify-center text-white">
+
+    <div class="w-full max-w-md flex flex-col gap-6">
+        <!-- Header -->
+        <div class="text-center">
+            <h1 class="text-2xl font-bold text-blue-400">Guard Scanner</h1>
+            <p class="text-gray-400 text-sm">Scan QR & Verify Visitor</p>
+        </div>
+
+        <!-- Scanner / Camera Section -->
+        <div class="bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700 relative">
+            <!-- QR Scanner View -->
+            <div id="scanner-container">
+                <div id="reader"></div>
+                <p class="text-center text-gray-500 text-xs mt-2">Point camera at Visitor QR Code</p>
+            </div>
+
+            <!-- Verification / Photo Capture View (Hidden initially) -->
+            <div id="capture-container" class="hidden flex flex-col gap-4">
+                <div class="bg-green-900/50 p-3 rounded-lg border border-green-500/30 text-center">
+                    <p class="text-green-400 font-bold">QR Token Detected!</p>
+                    <p class="text-xs text-gray-400" id="token-display">...</p>
+                </div>
+
+                <!-- Live Camera for Face Capture -->
+                <div class="relative rounded-lg overflow-hidden bg-black aspect-[3/4]">
+                    <video id="face-video" class="w-full h-full object-cover" autoplay playsinline></video>
+                    <canvas id="face-canvas" class="hidden"></canvas>
+                </div>
+
+                <button id="capture-btn"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">camera</span>
+                    Capture & Verify Face
+                </button>
+            </div>
+        </div>
+
+        <!-- Result Display -->
+        <div id="result-container"
+            class="hidden bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 text-center">
+            <div id="result-icon" class="text-6xl mb-4"></div>
+            <h2 id="result-title" class="text-xl font-bold mb-2"></h2>
+            <p id="result-msg" class="text-gray-400 text-sm"></p>
+            <button onclick="location.reload()"
+                class="mt-6 w-full bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg">Scan Next</button>
+        </div>
+    </div>
+
+    <script>
+        const scannerContainer = document.getElementById('scanner-container');
+        const captureContainer = document.getElementById('capture-container');
+        const resultContainer = document.getElementById('result-container');
+        const tokenDisplay = document.getElementById('token-display');
+
+        let scannedToken = null;
+        let html5QrcodeScanner = null;
+
+        // Initialize QR Scanner
+        function onScanSuccess(decodedText, decodedResult) {
+            // Extract token from URL if needed, or assume raw token
+            // Our QR is a URL: http://.../verify-token?token=UUID
+            try {
+                const url = new URL(decodedText);
+                scannedToken = url.searchParams.get("token");
+            } catch (e) {
+                // If not URL, maybe raw token?
+                scannedToken = decodedText;
+            }
+
+            if (scannedToken) {
+                console.log(`Scan Confirmed: ${scannedToken}`);
+                stopScannerAndShowCapture();
+            }
+        }
+
+        function onScanFailure(error) {
+            // console.warn(`Scan error: ${error}`);
+        }
+
+        html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader",
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            /* verbose= */ false
+        );
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+
+        // Switch to Capture Mode
+        async function stopScannerAndShowCapture() {
+            html5QrcodeScanner.clear();
+            scannerContainer.classList.add('hidden');
+            captureContainer.classList.remove('hidden');
+            tokenDisplay.innerText = scannedToken;
+
+            // Start Face Camera
+            try {
+                // Constraint: secure context required for camera
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                const video = document.getElementById('face-video');
+                video.srcObject = stream;
+            } catch (err) {
+                console.error(err);
+                alert("Camera Access Failed! \n\nIf you are on a phone/network (not localhost), browsers BLOCK camera on HTTP.\n\nFix for Chrome Android:\n1. Go to chrome://flags/#unsafely-treat-insecure-origin-as-secure\n2. Add your server IP (http://172.20.10.7:8000)\n3. Enable and Relaunch.");
+
+                // Fallback: File Input for photo?
+                // I could add a file input backup here if I wanted to be nice, but user explicitly asked for "scanner thing".
+            }
+        }
+
+        // Capture & Verify
+        document.getElementById('capture-btn').addEventListener('click', async () => {
+            const video = document.getElementById('face-video');
+            const canvas = document.getElementById('face-canvas');
+            const context = canvas.getContext('2d');
+
+            // Set canvas dimensions to video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convert to Blob
+            canvas.toBlob(async (blob) => {
+                if (!blob) return;
+
+                // Show Loading
+                document.getElementById('capture-btn').innerText = "Verifying...";
+                document.getElementById('capture-btn').disabled = true;
+
+                // Prepare Form Data
+                const formData = new FormData();
+                formData.append('token', scannedToken);
+                formData.append('image_file', blob, 'visitor_face.jpg');
+
+                try {
+                    const response = await fetch('/verify-entry', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    showResult(data);
+                } catch (e) {
+                    alert("Verification Error: " + e);
+                    location.reload();
+                }
+            }, 'image/jpeg', 0.8);
+        });
+
+        function showResult(data) {
+            captureContainer.classList.add('hidden');
+            resultContainer.classList.remove('hidden');
+
+            const icon = document.getElementById('result-icon');
+            const title = document.getElementById('result-title');
+            const msg = document.getElementById('result-msg');
+
+            if (data.status === "approved") {
+                icon.innerText = "✅";
+                title.innerText = "Access Granted";
+                title.className = "text-xl font-bold mb-2 text-green-400";
+                msg.innerText = data.detail || "Visitor verified successfully.";
+            } else if (data.status === "anomaly") {
+                icon.innerText = "⚠️";
+                title.innerText = "ANOMALY DETECTED";
+                title.className = "text-xl font-bold mb-2 text-red-500 animate-pulse";
+                msg.innerText = data.detail || "Face does not match registered visitor!";
+            } else {
+                icon.innerText = "❌";
+                title.innerText = "Access Denied";
+                title.className = "text-xl font-bold mb-2 text-red-400";
+                msg.innerText = data.detail || "Invalid Token.";
+            }
+        }
+    </script>
+</body>
+
+</html>
