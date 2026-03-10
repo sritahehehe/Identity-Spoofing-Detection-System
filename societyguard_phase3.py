@@ -5,6 +5,8 @@ import datetime
 import uuid
 import qrcode
 import os
+from dotenv import load_dotenv
+load_dotenv()  # Load secrets from .env file
 import fakeredis  # CHANGED: Internal Embedded Redis Service
 from fastapi import FastAPI, Request, Form, HTTPException, Response, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -34,7 +36,7 @@ except ImportError:
     print("WARNING: face_recognition not installed. Anomaly detection disabled.")
 
 app = FastAPI()
-app.add_middleware(SessionMiddleware, secret_key="supersecretkey")
+app.add_middleware(SessionMiddleware, secret_key=os.environ.get("SESSION_SECRET_KEY", "change-me-in-production"))
 # Mount current directory for simple video serving (in production use a specific folder)
 app.mount("/static_videos", StaticFiles(directory="."), name="static_videos")
 
@@ -43,7 +45,7 @@ templates = Jinja2Templates(directory="templates")
 os.makedirs("static/qrcodes", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-SECRET = b"supersecretkey"
+SECRET = os.environ.get("HMAC_SECRET", "change-me-in-production").encode()
 DB_NAME = "iam_society.db"
 
 # Config
@@ -52,10 +54,10 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-SENDER_EMAIL = "kmehak2426@gmail.com" # Updated per user request
-SENDER_PASSWORD = "raheemfmiovrapji" # User provided app password
+SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "")  # Set in .env
+SENDER_PASSWORD = os.environ.get("SENDER_PASSWORD", "")  # Set in .env
 
 def send_real_email(to_email, subject, body, is_html=False):
     try:

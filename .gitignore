@@ -9,6 +9,11 @@ venv/
 *.db
 *.sqlite
 .DS_Store
-sms_error.log
+*.log
+temp_vid_*.mp4
+output_*.webm
+replacements.txt
+error.txt
+error.log
 static/qrcodes/*
 !static/qrcodes/.gitkeep
