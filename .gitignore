@@ -12,10 +12,3 @@ venv/
 sms_error.log
 static/qrcodes/*
 !static/qrcodes/.gitkeep
-
-# Video Artifacts
-*.mp4
-*.webm
-*.avi
-temp_vid_*
-output_*
